@@ -1,5 +1,5 @@
-import * as React from 'react';
-import './Header.css';
+import * as React from "react"
+import "./Header.css"
 
 export function Header(props) {
   return (
@@ -8,7 +8,7 @@ export function Header(props) {
       <h4 className="tagline">{props.tagline}</h4>
       <p className="description">{props.description}</p>
     </header>
-  );
+  )
 }
 
-export default Header;
+export default Header

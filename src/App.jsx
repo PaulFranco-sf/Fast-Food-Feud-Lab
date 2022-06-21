@@ -1,11 +1,11 @@
-import * as React from 'react';
+import * as React from "react"
 // IMPORT ANY NEEDED COMPONENTS HERE
-import { createDataSet } from './data/dataset';
-import './App.css';
-import Header from './components/Header/Header';
-import Instructions from './components/Instructions/Instructions';
-import Chip from './components/Chip/Chip';
-import NutritionalLabel from './components/NutritionalLabel/NutritionalLabel';
+import { createDataSet } from "./data/dataset"
+import "./App.css"
+import Header from "./components/Header/Header"
+import Instructions from "./components/Instructions/Instructions"
+import Chip from "./components/Chip/Chip"
+import NutritionalLabel from "./components/NutritionalLabel/NutritionalLabel"
 
 // don't move this!
 export const appInfo = {
@@ -20,134 +20,102 @@ export const appInfo = {
     noSelectedItem: `Almost there! Choose a menu item and you'll have the fast food facts right at your fingertips!`,
     allSelected: `Great choice! Amazing what a little knowledge can do!`,
   },
-};
+}
 // or this!
-const { data, categories, restaurants } = createDataSet();
+const { data, categories, restaurants } = createDataSet()
 
 export function App() {
-  
-  const [selectedCategory, setSelectedCategory] = React.useState('');
-  const [selectedRestaurant, setSelectedRestaurant] = React.useState('');
-  const [selectedMenuItem, setSelectedMenuItem] = React.useState('');
 
-  const handleClick = (type, item) => {
-    if (type == 'category') {
-      setSelectedCategory(item);
-    } else if (type == 'restaurant') {
-      setSelectedRestaurant(item);
-    } else {
-      setSelectedMenuItem(item);
-    }
-  };
+  const [selectedCategory, setSelectedCategory] = React.useState(null); 
+  const [selectedRestaurant, setSelectedRestaurant] = React.useState(null);
+  const [selectedItem, setSelectedItem] = React.useState(null);
 
-  const handleClose = (type) => {
-    console.log('close', type);
-    if (type == 'menu') {
-      setSelectedMenuItem('');
-    } else if (type == 'restaurant') {
-      setSelectedRestaurant('');
-    } else {
-      setSelectedCategory('');
-    }
-    console.log(selectedRestaurant);
-  };
-
-  const currentMenuItems = data.filter((item) => {
-    return (
-      item.food_category == selectedCategory &&
-      item.restaurant == selectedRestaurant
-    );
-  });
-
-  let currentInstructions = appInfo.instructions.start;
-  if (!selectedCategory && !selectedRestaurant && !selectedMenuItem) {
-    currentInstructions = appInfo.instructions.start;
-  } else if (selectedCategory && !selectedRestaurant) {
-    currentInstructions = appInfo.instructions.onlyCategory;
-  } else if (!selectedCategory && selectedRestaurant) {
-    currentInstructions = appInfo.instructions.onlyRestaurant;
-  } else if (selectedCategory && selectedRestaurant && !selectedMenuItem) {
-    currentInstructions = appInfo.instructions.noSelectedItem;
-  } else {
-    currentInstructions = appInfo.instructions.allSelected;
+  function handleClick(cat) {
+    setSelectedCategory(cat);
   }
+
+  function handleClickRest(rest) {
+    setSelectedRestaurant(rest);
+  }
+
+  function handleClickItem(item) {
+    setSelectedItem(item);
+  }
+
+  function findInstruction() {
+    if (selectedCategory == null && selectedRestaurant == null) {
+      return appInfo.instructions.start;
+    } else if (selectedCategory != null && selectedRestaurant == null) {
+      return appInfo.instructions.onlyCategory;
+    } else if (selectedCategory == null && selectedRestaurant != null) {
+      return appInfo.instructions.onlyRestaurant;
+    } else if (selectedCategory != null && selectedRestaurant != null && selectedItem == null) {
+      return appInfo.instructions.noSelectedItem;
+    } else {
+      return appInfo.instructions.allSelected;
+    }
+  }
+
+  function selectedItemCheck(part) {
+    if (selectedItem == null) return null;
+    else if(part == "") return selectedItem;
+    else return selectedItem[part];
+  }
+
+  var currentMenuItems = data.filter((rest) => {
+    return (rest.food_category == selectedCategory && rest.restaurant == selectedRestaurant);
+  })
+
+  console.log(data);
+
   return (
     <main className="App">
+      {/* CATEGORIES COLUMN */}
       <div className="CategoriesColumn col">
         <div className="categories options">
           <h2 className="title">Categories</h2>
-          {categories.map((category) => {
-            return (
-              <Chip
-                type={'category'}
-                handleClose={handleClose}
-                handleClick={handleClick}
-                key={category}
-                label={category}
-                isActive={category == selectedCategory}
-              />
-            );
-          })}
+          {categories.map((cat, idx) => (
+              <Chip key={idx} chip={idx} label={cat} isActive={cat === selectedCategory} useClick={() => {
+                handleClick(cat);
+              }} />
+            ))}
         </div>
       </div>
 
+      {/* MAIN COLUMN */}
       <div className="container">
-        <Header
-          title={appInfo.title}
-          tagline={appInfo.tagline}
-          description={appInfo.description}
-        />
+        {/* HEADER GOES HERE */}
+        <Header title={appInfo.title} description={appInfo.description} tagline={appInfo.tagline}/>
 
+        {/* RESTAURANTS ROW */}
         <div className="RestaurantsRow">
           <h2 className="title">Restaurants</h2>
           <div className="restaurants options">
-            {restaurants.map((restaurant) => {
-              return (
-                <Chip
-                  type={'restaurant'}
-                  handleClose={handleClose}
-                  handleClick={handleClick}
-                  key={restaurant}
-                  label={restaurant}
-                  isActive={restaurant == selectedRestaurant}
-                />
-              );
-            })}
+            {restaurants.map((rest, idx) => (
+              <Chip key={idx} chip={idx} label={rest} isActive={rest === selectedRestaurant} useClick={() => {
+                handleClickRest(rest);
+              }} />
+            ))}
           </div>
         </div>
 
-        
-        <Instructions instructions={currentInstructions} />
+        {/* INSTRUCTIONS GO HERE */}
+        <Instructions instructions={findInstruction()}/>
 
         {/* MENU DISPLAY */}
         <div className="MenuDisplay display">
           <div className="MenuItemButtons menu-items">
             <h2 className="title">Menu Items</h2>
-            {currentMenuItems.map((item) => {
-              return (
-                <Chip
-                  label={item.item_name}
-                  key={item.item_name}
-                  type="menu"
-                  handleClose={handleClose}
-                  handleClick={handleClick}
-                  isActive={selectedMenuItem == item.item_name}
-                />
-              );
-            })}
+            {/* YOUR CODE HERE */}
+            {currentMenuItems.map((food, idx) => (
+              <Chip key={idx} chip={idx} label={food.item_name} isActive={food === selectedItem} useClick={() => {
+                handleClickItem(food);
+              }}/>
+            ))}
           </div>
 
-
-          <div className="NutritionFacts nutrition-facts">
-
-            {selectedMenuItem ? (
-              <NutritionalLabel
-                item={data.find((item) => {
-                  return item.item_name == selectedMenuItem;
-                })}
-              />
-            ) : null}
-          </div>
+          {/* NUTRITION FACTS */}
+          <div className="NutritionFacts nutrition-facts">{ <NutritionalLabel nutritional-label={selectedItemCheck("")} item-name={selectedItemCheck("item_name")} fact-list={selectedItemCheck("")} /> }</div>
         </div>
 
         <div className="data-sources">
@@ -155,7 +123,7 @@ export function App() {
         </div>
       </div>
     </main>
-  );
+  )
 }
 
-export default App;
+export default App

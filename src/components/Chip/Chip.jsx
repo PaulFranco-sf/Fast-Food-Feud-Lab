@@ -1,31 +1,14 @@
-import * as React from 'react';
-import './Chip.css';
+import * as React from "react"
+import "./Chip.css"
 
-export function Chip({
-  label = '',
-  isActive = false,
-  type,
-  handleClick,
-  handleClose,
-}) {
-  const buttonClassName = `chip ${isActive ? 'active' : ''}`;
-
+export function Chip({ label = "", isActive = false, useClick = () => {  } }) {
+  
   return (
-    <button
-      className={buttonClassName}
-      onClick={() => {
-        handleClick(type, label);
-      }}>
+    <button className={ isActive ? "chip active" : "chip"} onClick={useClick} >
       <p className="label">{label}</p>
-      <span
-        className="close"
-        role="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleClose(type);
-        }}>{`X`}</span>
+      <span className="close" role="button">{`X`}</span>
     </button>
-  );
+  )
 }
 
-export default Chip;
+export default Chip

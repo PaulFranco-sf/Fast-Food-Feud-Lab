@@ -1,18 +1,13 @@
 import * as React from "react"
 import Chip from "../components/Chip/Chip"
 import { configureSpecSuiteWithUtils } from "./utils"
-import { Dataset } from "../data/dataset"
+import { createDataSet } from "../data/dataset"
+
+const { categories, restaurants } = createDataSet()
 
 export function testStateAndEventHandlers(App) {
-  const {
-    assert,
-    suite,
-    render,
-    fireEvent,
-    cleanup,
-    bootstrapTestSuiteContext,
-    //
-  } = configureSpecSuiteWithUtils(App)
+  const { assert, suite, render, fireEvent, customQueries, bootstrapTestSuiteContext } =
+    configureSpecSuiteWithUtils(App)
 
   const FeatureTestSuite = suite("FEATURE 004: Using the `onClick` handlers to modify React state")
 
@@ -26,17 +21,11 @@ export function testStateAndEventHandlers(App) {
     ctx.results = results
     ctx.propAssertions = propAssertions
 
-    const isPTag = (node) => node.type === "p"
-    const nodeHasCategoriesClass = (node) => node.parent.props.className.split(" ").includes("categories")
-    const nodeHasRestaurantsClass = (node) => node.parent.props.className.split(" ").includes("restaurants")
+    const categoryChips = results.Chip.filter((chip) => chip.parent.props.className.split(" ").includes("categories"))
+    const restaurantChips = results.Chip.filter((chip) =>
+      chip.parent.props.className.split(" ").includes("restaurants")
+    )
 
-    const categoryParagraphs = results.root?.findAll((node) => isPTag(node) && nodeHasCategoriesClass(node)) ?? []
-    const categoryChips = results.Chip?.filter((chip) => nodeHasCategoriesClass(chip)) ?? []
-    const restaurantParagraphs = results.root?.findAll((node) => isPTag(node) && nodeHasRestaurantsClass(node)) ?? []
-    const restaurantChips = results.Chip?.filter((chip) => nodeHasRestaurantsClass(chip)) ?? []
-
-    ctx.results.categoryParagraphs = categoryParagraphs
-    ctx.results.restaurantParagraphs = restaurantParagraphs
     ctx.results.categoryChips = categoryChips
     ctx.results.restaurantChips = restaurantChips
   })
@@ -47,50 +36,54 @@ export function testStateAndEventHandlers(App) {
 
   FeatureTestSuite.after.each((ctx) => {
     ctx.sandbox.restore()
-    cleanup()
   })
 
   FeatureTestSuite.after((ctx) => {
     ctx.sandbox.restore()
   })
 
-  /*================================
-   =          CONSTANTS            =
-   =================================*/
-  const { categories, restaurants } = Dataset.createDataSet()
+  // TODO: Test that the Chip passes the `button` element the correct props
+
+  FeatureTestSuite.test("Chips have a working `isActive` prop that updates the chip styling.", async (ctx) => {
+    const { categoryChips, restaurantChips } = ctx.results
+
+    const chips = [...categoryChips, ...restaurantChips]
+
+    // either all chips should be active by default
+    const allChipsHaveIsActive = chips.every((chip) => (chip?.props?.className?.split?.(" ") ?? "").includes("active"))
+
+    const { findByText, rerender } = render(<Chip label="Chippy Chip" isActive={false} />)
+    const chipParagraph = await findByText("Chippy Chip")
+    const chip = chipParagraph?.parentElement
+
+    const classesBefore = Array.from(chip?.classList ?? [])
+
+    rerender(<Chip label="Chippy Chip" isActive={true} />)
+
+    const classesAfter = Array.from(chip?.classList ?? [])
+
+    const chipHasActiveClassWhenIsActiveProp = classesAfter.includes("active") && !classesBefore.includes("active")
+
+    assert.ok(
+      allChipsHaveIsActive || chipHasActiveClassWhenIsActiveProp,
+      `Either the Chip component doesn't have the \`isActive\` prop defaulted to \`true\`, or Chip component doesn't use the \`isActive\` prop to update its "className".`
+    )
+  })
 
   FeatureTestSuite.test(
     "Each `Chip` component passes its `onClick` prop to the `button` element inside of it.",
     async (ctx) => {
-      const spy = ctx.sandbox.spy()
-
-      const { container } = render(
-        <main>
-          <Chip label="Chippy Chip" onClick={spy} />
-        </main>
-      )
-
-      const chipButton = container.querySelector("button.chip")
-
-      assert.ok(chipButton, `The Chip component doesn't have a \`button\` element with the className of \`chip\`.`)
-
-      fireEvent.click(chipButton)
-
-      assert.ok(
-        spy.calledOnce,
-        `The Chip component doesn't have pass its \`onClick\` prop to the  \`button\` element as its \`onClick\` prop.`
-      )
+      // TODO: Test that the Chip passes the `button` element the correct props
     }
   )
 
   FeatureTestSuite.test(
-    "Clicking on a 'categories' `Chip` triggers its `onClick` handler and updates state with the correct value. " +
-      "That value is then used to determine which categories `Chip` component is active.",
+    "Clicking on a 'Categories' Chip triggers its `onClick` handler and updates state with the correct value. That value is then used to determine which Chip component is active.",
     async (ctx) => {
-      const { queryByText } = render(<App />)
+      const { findByText } = render(<App />)
 
       for (const category of categories) {
-        let chipParagraph = queryByText(category)
+        let chipParagraph = await findByText(category)
         let chip = chipParagraph?.parentElement
 
         const classesBefore = Array.from(chip?.classList ?? [])
@@ -99,7 +92,7 @@ export function testStateAndEventHandlers(App) {
 
         fireEvent.click(chip ?? chipParagraph)
 
-        chipParagraph = queryByText(category)
+        chipParagraph = await findByText(category)
         chip = chipParagraph?.parentElement
 
         const classesAfter = Array.from(chip?.classList ?? [])
@@ -110,13 +103,12 @@ export function testStateAndEventHandlers(App) {
   )
 
   FeatureTestSuite.test(
-    "Clicking on a 'restaurants' `Chip` triggers its `onClick` handler and updates state with the correct value. " +
-      "That value is then used to determine which restaurant `Chip` component is active.",
+    "Clicking on a 'Restaurants' Chip triggers its `onClick` handler and updates state with the correct value. That value is then used to determine which Restaurant component is active.",
     async (ctx) => {
-      const { queryByText } = render(<App />)
+      const { findByText } = render(<App />)
 
       for (const restaurant of restaurants) {
-        let chipParagraph = queryByText(restaurant)
+        let chipParagraph = await findByText(restaurant)
         let chip = chipParagraph?.parentElement
 
         const classesBefore = Array.from(chip?.classList ?? [])
@@ -128,7 +120,7 @@ export function testStateAndEventHandlers(App) {
 
         fireEvent.click(chip ?? chipParagraph)
 
-        chipParagraph = queryByText(restaurant)
+        chipParagraph = await findByText(restaurant)
         chip = chipParagraph?.parentElement
 
         const classesAfter = Array.from(chip?.classList ?? [])

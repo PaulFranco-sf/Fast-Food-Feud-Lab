@@ -1,8 +1,20 @@
 import * as React from "react"
 import NutritionalLabel from "../components/NutritionalLabel/NutritionalLabel"
 import { configureSpecSuiteWithUtils } from "./utils"
-import { Dataset } from "../data/dataset"
+import { createDataSet } from "../data/dataset"
 import { nutritionFacts } from "../constants"
+
+const { data, categories, restaurants } = createDataSet()
+
+// pull out some constants
+const doubleDoubleMenuItem = `Double Double Burger w/ Onion`
+const burgersCategory = categories[8]
+const inNOutRestaurant = restaurants[6]
+
+const currentMenuItems = data.filter((item) => {
+  return item.food_category === burgersCategory && item.restaurant === inNOutRestaurant
+})
+const doubleDoubleMenuItemData = currentMenuItems.find((item) => item.item_name === doubleDoubleMenuItem)
 
 export function testRenderStateValues(App) {
   const {
@@ -10,7 +22,6 @@ export function testRenderStateValues(App) {
     suite,
     render,
     fireEvent,
-    cleanup,
     customQueries,
     bootstrapTestSuiteContext,
     within,
@@ -29,17 +40,11 @@ export function testRenderStateValues(App) {
     ctx.results = results
     ctx.propAssertions = propAssertions
 
-    const isPTag = (node) => node.type === "p"
-    const nodeHasCategoriesClass = (node) => node.parent.props.className.split(" ").includes("categories")
-    const nodeHasRestaurantsClass = (node) => node.parent.props.className.split(" ").includes("restaurants")
+    const categoryChips = results.Chip.filter((chip) => chip.parent.props.className.split(" ").includes("categories"))
+    const restaurantChips = results.Chip.filter((chip) =>
+      chip.parent.props.className.split(" ").includes("restaurants")
+    )
 
-    const categoryParagraphs = results.root?.findAll((node) => isPTag(node) && nodeHasCategoriesClass(node)) ?? []
-    const categoryChips = results.Chip?.filter((chip) => nodeHasCategoriesClass(chip)) ?? []
-    const restaurantParagraphs = results.root?.findAll((node) => isPTag(node) && nodeHasRestaurantsClass(node)) ?? []
-    const restaurantChips = results.Chip?.filter((chip) => nodeHasRestaurantsClass(chip)) ?? []
-
-    ctx.results.categoryParagraphs = categoryParagraphs
-    ctx.results.restaurantParagraphs = restaurantParagraphs
     ctx.results.categoryChips = categoryChips
     ctx.results.restaurantChips = restaurantChips
   })
@@ -50,28 +55,11 @@ export function testRenderStateValues(App) {
 
   FeatureTestSuite.after.each((ctx) => {
     ctx.sandbox.restore()
-    cleanup()
   })
 
   FeatureTestSuite.after((ctx) => {
     ctx.sandbox.restore()
   })
-
-  /*================================
-   =          CONSTANTS            =
-   =================================*/
-  const { data, categories, restaurants } = Dataset.createDataSet()
-  const doubleDoubleMenuItem = `Double Double Burger w/ Onion`
-  const burgersCategory = categories[8]
-  const inNOutRestaurant = restaurants[6]
-
-  /*================================
-   =            Helpers            =  
-   =================================*/
-  const currentMenuItems = data.filter((item) => {
-    return item.food_category === burgersCategory && item.restaurant === inNOutRestaurant
-  })
-  const doubleDoubleMenuItemData = currentMenuItems.find((item) => item.item_name === doubleDoubleMenuItem)
 
   function setupMenuItems() {
     const renderQueries = render(<App />)
@@ -81,10 +69,10 @@ export function testRenderStateValues(App) {
 
     assert.not.ok(menuItemChip, `Menu item Chips should not be rendered before a category and restaurant are selected`)
 
-    const categoryChipParagraph = renderQueries.queryByText(burgersCategory)
+    const categoryChipParagraph = renderQueries.getByText(burgersCategory)
     const categoryChip = categoryChipParagraph?.parentElement
 
-    const restaurantChipParagraph = renderQueries.queryByText(inNOutRestaurant)
+    const restaurantChipParagraph = renderQueries.getByText(inNOutRestaurant)
     const restaurantChip = restaurantChipParagraph?.parentElement
 
     assert.ok(categoryChip, `Category Chip for ${burgersCategory} could not be found`)
@@ -108,28 +96,24 @@ export function testRenderStateValues(App) {
       `Clicking the ${burgersCategory} and ${inNOutRestaurant} Chips should be render 9 menu item Chips inside the div with a clasname of "menu-items"`
     )
 
-    const p = within(menuItemsDiv).queryByText(doubleDoubleMenuItem)
+    const p = await within(menuItemsDiv).findByText(doubleDoubleMenuItem)
     const doubleDoubleChip = p.parentElement
 
     return doubleDoubleChip
   }
 
-  /*================================
-   =            TESTS              =
-   =================================*/
-
   FeatureTestSuite.test("Clicking a `category` Chip and a `restaurant` Chip renders `menuItem` Chips", async (ctx) => {
-    const { container, queryByText } = render(<App />)
+    const { container, getByText, queryByText } = render(<App />)
 
     let menuItemChipParagraph = queryByText(doubleDoubleMenuItem)
     let menuItemChip = menuItemChipParagraph?.parentElement
 
     assert.not.ok(menuItemChip, `Menu item Chips should not be rendered before a category and restaurant are selected`)
 
-    const categoryChipParagraph = queryByText(burgersCategory)
+    const categoryChipParagraph = getByText(burgersCategory)
     const categoryChip = categoryChipParagraph?.parentElement
 
-    const restaurantChipParagraph = queryByText(inNOutRestaurant)
+    const restaurantChipParagraph = getByText(inNOutRestaurant)
     const restaurantChip = restaurantChipParagraph?.parentElement
 
     assert.ok(categoryChip, `Category Chip for ${burgersCategory} could not be found`)
@@ -158,8 +142,7 @@ export function testRenderStateValues(App) {
       `Clicking the ${burgersCategory} and ${inNOutRestaurant} Chips should be render 9 menu item Chips inside the div with a clasname of "menu-items"`
     )
 
-    const p = within(menuItemsDiv).queryByText(doubleDoubleMenuItem)
-
+    const p = await within(menuItemsDiv).findByText(doubleDoubleMenuItem)
     const doubleDoubleChip = p.parentElement
 
     assert.ok(doubleDoubleChip, `Menu Item Chips should be rendered after a category and restaurant are selected.`)
